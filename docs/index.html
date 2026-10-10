@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>vistexaud — VISion + TEXt + AUDio, one fast pipeline</title>
+<meta name="description" content="vistexaud is a fast, practical, unified Vision/Text/Audio pipeline framework in pure Python."/>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg"/>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="#top">
+    <img src="assets/logo.svg" alt="vistexaud logo" width="36" height="36"/>
+    <span>vistexaud</span>
+  </a>
+  <nav>
+    <a href="#features">Features</a>
+    <a href="#playground">Playground</a>
+    <a href="#tasks">Tasks</a>
+    <a href="#quickstart">Quickstart</a>
+    <a href="#cli">CLI</a>
+    <a href="https://github.com/salim-studio/vistexaud">GitHub</a>
+  </nav>
+  <a class="btn small" href="https://github.com/salim-studio/vistexaud">Get the code</a>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="hero-glow" aria-hidden="true"></div>
+    <img class="hero-logo" src="assets/logo.svg" alt="vistexaud VXA mark" width="120" height="120"/>
+    <p class="kicker">VISion &middot; TEXt &middot; AUDio</p>
+    <h1>One fast pipeline<br/>for <span class="grad">live media</span>.</h1>
+    <p class="lede">vistexaud is a pure-Python streaming framework for images, text, and sound. Install in seconds, run offline, and chain tasks into live pipelines with per-node timing built in.</p>
+    <div class="badges">
+      <span>Python &ge; 3.9</span><span>MIT License</span>
+      <span class="b-vis">Vision realtime</span>
+      <span class="b-tex">Text ~0.1 ms/doc</span>
+      <span class="b-aud">Audio realtime</span>
+    </div>
+    <div class="hero-actions">
+      <div class="install"><code>pip install opencv-python numpy</code><button id="copy-install" type="button">Copy</button></div>
+      <a class="btn" href="#quickstart">Quickstart</a>
+      <a class="btn ghost" href="#playground">Try the playground</a>
+    </div>
+  </section>
+
+  <section id="features" class="section">
+    <h2>Why vistexaud</h2>
+    <div class="cards">
+      <article class="card vis">
+        <h3>Zero downloads required</h3>
+        <p>OpenCV + NumPy heuristics run on first launch. Text in microseconds, vision in single-digit milliseconds.</p>
+      </article>
+      <article class="card tex">
+        <h3>Optional ONNX upgrade</h3>
+        <p>Plug a YuNet or YOLO ONNX file for higher accuracy only when you need it. The API does not change.</p>
+      </article>
+      <article class="card aud">
+        <h3>Live-first streaming</h3>
+        <p><code>Pipeline</code> runs a worker thread with backpressure — it drops the oldest frame instead of lagging.</p>
+      </article>
+      <article class="card">
+        <h3>Observable by default</h3>
+        <p><code>graph.report()</code> shows call counts and average milliseconds per node. No profiler setup.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="playground" class="section">
+    <h2>Playground <span class="tag">runs 100% in your browser</span></h2>
+    <p class="muted">A tiny client-side mirror of the vistexaud text branch — language detection, classification, extractive summary.</p>
+    <textarea id="pg-input" rows="4">A football match analyzed by AI software. Markets rally as tech earnings beat expectations.</textarea>
+    <div class="pg-grid">
+      <div class="pg-card"><h4>Language</h4><p id="pg-lang">—</p></div>
+      <div class="pg-card"><h4>Category</h4><p id="pg-cat">—</p></div>
+      <div class="pg-card"><h4>Latency</h4><p id="pg-ms">—</p></div>
+      <div class="pg-card wide"><h4>Summary</h4><p id="pg-sum">—</p></div>
+    </div>
+  </section>
+
+  <section id="tasks" class="section">
+    <h2>Tasks</h2>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Modality</th><th>Task</th><th>Method</th><th>Download</th></tr></thead>
+      <tbody>
+        <tr><td><span class="dot vis"></span>Vision</td><td>FaceDetector</td><td>Haar cascade / YuNet ONNX</td><td>No / optional</td></tr>
+        <tr><td><span class="dot vis"></span>Vision</td><td>HandTracker</td><td>Skin-color + contours</td><td>No</td></tr>
+        <tr><td><span class="dot vis"></span>Vision</td><td>PoseEstimator</td><td>HOG person + skeleton</td><td>No</td></tr>
+        <tr><td><span class="dot vis"></span>Vision</td><td>MotionDetector</td><td>Background subtraction</td><td>No</td></tr>
+        <tr><td><span class="dot tex"></span>Text</td><td>LanguageDetector</td><td>Script statistics</td><td>No</td></tr>
+        <tr><td><span class="dot tex"></span>Text</td><td>TextClassifier</td><td>Keyword scoring</td><td>No</td></tr>
+        <tr><td><span class="dot tex"></span>Text</td><td>TextEmbedder</td><td>Hashing vector, L2-normalized</td><td>No</td></tr>
+        <tr><td><span class="dot tex"></span>Text</td><td>Summarizer</td><td>Frequency-ranked extractive</td><td>No</td></tr>
+        <tr><td><span class="dot aud"></span>Audio</td><td>VoiceActivityDetector</td><td>Short-time energy</td><td>No</td></tr>
+        <tr><td><span class="dot aud"></span>Audio</td><td>AudioClassifier</td><td>Spectral heuristic</td><td>No</td></tr>
+        <tr><td><span class="dot aud"></span>Audio</td><td>PitchEstimator</td><td>Autocorrelation</td><td>No</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section id="quickstart" class="section">
+    <h2>Quickstart</h2>
+    <div class="tabs">
+      <button class="tab active" data-tab="t-text" type="button">Text + Audio</button>
+      <button class="tab" data-tab="t-vis" type="button">Vision live</button>
+      <button class="tab" data-tab="t-custom" type="button">Custom task</button>
+    </div>
+<pre class="code active" id="t-text"><code>from vistexaud.core.graph import Graph
+from vistexaud.core.types import TextDoc, AudioChunk
+from vistexaud.text.text_tasks import LanguageDetector, TextClassifier, Summarizer
+from vistexaud.audio.audio_tasks import VoiceActivityDetector, AudioClassifier
+
+text = Graph([LanguageDetector(), TextClassifier(), Summarizer()])
+print(text.run_parallel(TextDoc("A football match analyzed by AI software")))
+
+import numpy as np
+sr = 16000
+tone = (0.3 * np.sin(2 * np.pi * 220 * np.linspace(0, 1, sr, endpoint=False))).astype(np.float32)
+audio = Graph([VoiceActivityDetector(), AudioClassifier()])
+print(audio.run_parallel(AudioChunk(tone, sr)))</code></pre>
+<pre class="code" id="t-vis"><code>import cv2
+from vistexaud.core.graph import Graph
+from vistexaud.vision.detectors import FaceDetector, MotionDetector
+from vistexaud.utils.helpers import draw_detections
+
+g = Graph([FaceDetector(), MotionDetector()])
+cap = cv2.VideoCapture(0)
+while True:
+    ok, frame = cap.read()
+    if not ok:
+        break
+    for result in g.run_parallel(frame).values():
+        frame = draw_detections(frame, result.output)
+    cv2.imshow("vistexaud", frame)
+    if cv2.waitKey(1) &amp; 0xFF == ord("q"):
+        break
+print(g.report())  # per-node timing</code></pre>
+<pre class="code" id="t-custom"><code>from vistexaud.tasks.base import BaseTask, TaskResult
+from vistexaud.core.packet import Packet
+
+class MyFilter(BaseTask):
+    task_name = "my_filter"
+
+    def process(self, packet: Packet):
+        return Packet(TaskResult("my_filter", packet.payload[::-1]), stream="out")</code></pre>
+  </section>
+
+  <section id="cli" class="section">
+    <h2>CLI</h2>
+<pre class="code active"><code>python -m vistexaud.cli vision --source 0        # live camera: faces
+python -m vistexaud.cli vision --source 0 --all  # live camera: faces + motion
+python -m vistexaud.cli text --text "A football match analyzed by AI"
+python -m vistexaud.cli audio                    # synthetic-tone audio demo
+python -m vistexaud.cli bench                    # speed benchmark</code></pre>
+  </section>
+
+  <section class="section">
+    <h2>Architecture</h2>
+<pre class="code active"><code>vistexaud/
+  core/    Packet | Calculator | Graph / Pipeline | ImageFrame / AudioChunk / TextDoc
+  vision/  FaceDetector | HandTracker | PoseEstimator | MotionDetector
+  text/    LanguageDetector | TextClassifier | TextEmbedder | Summarizer
+  audio/   VoiceActivityDetector | AudioClassifier | PitchEstimator
+  utils/   FPSMeter | draw_detections | Camera</code></pre>
+    <p class="muted">Sequential: <code>graph.process_one(payload)</code> chains A &rarr; B &rarr; C. Parallel branches: <code>graph.run_parallel(payload)</code> runs every node on the same input. Streaming: <code>Pipeline(nodes, on_result=...)</code> adds a threaded queue with backpressure.</p>
+  </section>
+</main>
+
+<footer>
+  <img src="assets/logo.svg" alt="vistexaud logo" width="40" height="40"/>
+  <p>Copyright &copy; 2026 salim-slimani. MIT License. <a href="https://github.com/salim-studio/vistexaud">github.com/salim-studio/vistexaud</a></p>
+</footer>
+
+<script src="site.js"></script>
+</body>
+</html>
