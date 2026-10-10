@@ -1,4 +1,4 @@
-"""Calculator: base processing node (like MediaPipe Calculator)."""
+"""Calculator: base processing node of the vistexaud pipeline."""
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Dict

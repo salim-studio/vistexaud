@@ -1,72 +1,143 @@
-# vistexaud — بديل عملي وسريع لـ MediaPipe
+<p align="center">
+  <img src="docs/assets/logo.svg" width="160" alt="vistexaud logo"/>
+</p>
 
-**vistexaud = Vis**ion + **Tex**t + **Aud**io. إطار بايثون خفيف وموحّد لمعالجة الوسائط الحية (صور/فيديو/نص/صوت) بأسلوب MediaPipe (Tasks + Graph + Calculator + Packet) لكن **بدون Bazel وبدون C++**: تثبيت بثوانٍ ويعمل فورًا.
+<h1 align="center">vistexaud</h1>
 
-## لماذا أسرع وأكفأ؟
-- **بدون تحميل موديلات إجباري**: كشف الوجوه بـ Haar المدمج في OpenCV (~5ms)، والحركة بـ MOG2 (~2ms)، والنص/الصوت بـ numpy خالص (~0.05ms).
-- **ترقية اختيارية**: إن وُجدت `mediapipe` أو ملف ONNX تُستخدم تلقائيًا لدقة أعلى.
-- **Pipeline بخيوط و Backpressure**: `Pipeline` يسقط أقدم فريم عند الازدحام بدل التأخير (مثالي للبث الحي).
-- **إحصاء زمن لكل عقدة**: `graph.report()` يعرض avg ms لكل Task.
+<p align="center"><strong>VISion + TEXt + AUDio — one fast pipeline for live media.</strong></p>
 
-## تثبيت
+<p align="center">
+  <img src="https://img.shields.io/badge/python-%3E%3D3.9-3776AB?logo=python&logoColor=white" alt="python"/>
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="license"/>
+  <img src="https://img.shields.io/badge/text-12k_docs%2Fs-06B6D4" alt="text speed"/>
+  <img src="https://img.shields.io/badge/vision-realtime-7C3AED" alt="vision"/>
+  <img src="https://img.shields.io/badge/audio-realtime-F59E0B" alt="audio"/>
+</p>
+
+Pure-Python streaming framework for **images, text, and sound**. Install in seconds, run offline, and chain tasks into live pipelines with per-node timing built in.
+
+## Why vistexaud
+
+- **Zero model downloads required** — OpenCV + NumPy heuristics run on first launch (~0.08 ms/doc for text, single-digit ms for vision).
+- **Optional ONNX upgrade** — plug a YuNet/YOLO ONNX file for higher accuracy when you need it.
+- **Live-first streaming** — `Pipeline` uses a worker thread with backpressure (drops the oldest frame instead of lagging).
+- **Observable by default** — `graph.report()` shows calls and average ms per node.
+- **One API for three modalities** — every task is a `BaseTask` with `process(packet) -> packet`.
+
+## Install
+
 ```bash
 pip install opencv-python numpy
-# اختياري للدقة القصوى:
-pip install mediapipe onnxruntime
+# optional accuracy boost:
+pip install onnxruntime
+# from source:
+git clone https://github.com/salim-studio/vistexaud.git
+cd vistexaud
+pip install -e .
 ```
 
-## استعمال سريع
+## Quickstart
+
 ```python
 from vistexaud.core.graph import Graph
-from vistexaud.vision.detectors import FaceDetector
-from vistexaud.text.text_tasks import LanguageDetector, TextClassifier
-from vistexaud.audio.audio_tasks import AudioClassifier
+from vistexaud.core.types import TextDoc, AudioChunk
+from vistexaud.text.text_tasks import LanguageDetector, TextClassifier, Summarizer
+from vistexaud.audio.audio_tasks import VoiceActivityDetector, AudioClassifier
 
-g = Graph([FaceDetector()])          # vision
-print(g.process_one(cv2.imread("img.jpg")))
+text = Graph([LanguageDetector(), TextClassifier(), Summarizer()])
+print(text.run_parallel(TextDoc("A football match analyzed by AI software")))
+
+import numpy as np
+sr = 16000
+tone = (0.3 * np.sin(2 * np.pi * 220 * np.linspace(0, 1, sr, endpoint=False))).astype(np.float32)
+audio = Graph([VoiceActivityDetector(), AudioClassifier()])
+print(audio.run_parallel(AudioChunk(tone, sr)))
+```
+
+```python
+import cv2
+from vistexaud.core.graph import Graph
+from vistexaud.vision.detectors import FaceDetector, MotionDetector
+from vistexaud.utils.helpers import draw_detections
+
+g = Graph([FaceDetector(), MotionDetector()])
+cap = cv2.VideoCapture(0)
+while True:
+    ok, frame = cap.read()
+    if not ok:
+        break
+    for result in g.run_parallel(frame).values():
+        frame = draw_detections(frame, result.output)
+    cv2.imshow("vistexaud", frame)
+    if cv2.waitKey(1) & 0xFF == ord("q"):
+        break
 print(g.report())
-
-g2 = Graph([LanguageDetector(), TextClassifier()])  # text
-from vistexaud.core.types import TextDoc
-print(g2.process_one(TextDoc("مباراة كرة القدم والذكاء الاصطناعي")))
 ```
 
-## سطر الأوامر
+## CLI
+
 ```bash
-python -m vistexaud.cli vision --source 0        # كاميرا حية + وجوه
-python -m vistexaud.cli vision --source 0 --all  # وجوه + حركة
-python -m vistexaud.cli text --text "مباراة كرة AI"
-python -m vistexaud.cli audio
-python -m vistexaud.cli bench
+python -m vistexaud.cli vision --source 0        # live camera: faces
+python -m vistexaud.cli vision --source 0 --all  # live camera: faces + motion
+python -m vistexaud.cli text --text "A football match analyzed by AI"
+python -m vistexaud.cli audio                    # synthetic-tone audio demo
+python -m vistexaud.cli bench                    # speed benchmark
 ```
 
-## البنية (مطابقة لفلسفة MediaPipe)
+## Architecture
+
 ```
 vistexaud/
-  core/    Packet | Calculator | Graph/Pipeline | ImageFrame/AudioChunk/TextDoc
+  core/    Packet | Calculator | Graph / Pipeline | ImageFrame / AudioChunk / TextDoc
   vision/  FaceDetector | HandTracker | PoseEstimator | MotionDetector
   text/    LanguageDetector | TextClassifier | TextEmbedder | Summarizer
   audio/   VoiceActivityDetector | AudioClassifier | PitchEstimator
   utils/   FPSMeter | draw_detections | Camera
 ```
 
-## مقارنة مع MediaPipe
-|  | MediaPipe | vistexaud |
-|---|---|---|
-| التثبيت | Bazel/C++ ثقيل | `pip install` فقط |
-| يعمل دون إنترنت/موديلات | لا غالبًا | نعم |
-| Vision/Text/Audio موحد | نعم | نعم |
-| بث حي + FPS | نعم | نعم (Pipeline + FPSMeter) |
-| قابلية التخصيص | Calculator مخصص | وراثة `BaseTask` وكتابة `process` فقط |
+- **Sequential**: `graph.process_one(payload)` chains A → B → C.
+- **Parallel branches**: `graph.run_parallel(payload)` runs every node on the same input.
+- **Streaming**: `Pipeline(nodes, on_result=...)` adds a threaded queue with backpressure.
 
-## إضافة Task جديد (دقيقة واحدة)
+## Tasks
+
+| Modality | Task                  | Method (default)              | Needs download |
+|----------|-----------------------|-------------------------------|----------------|
+| Vision   | FaceDetector          | Haar cascade / YuNet (ONNX)   | No / optional  |
+| Vision   | HandTracker           | Skin-color + contours         | No             |
+| Vision   | PoseEstimator         | HOG person + skeleton         | No             |
+| Vision   | MotionDetector        | Background subtraction (MOG2) | No             |
+| Text     | LanguageDetector      | Script statistics             | No             |
+| Text     | TextClassifier        | Keyword scoring               | No             |
+| Text     | TextEmbedder          | Hashing vector, L2-normalized | No             |
+| Text     | Summarizer            | Frequency-ranked extractive   | No             |
+| Audio    | VoiceActivityDetector | Short-time energy             | No             |
+| Audio    | AudioClassifier       | Spectral heuristic            | No             |
+| Audio    | PitchEstimator        | Autocorrelation               | No             |
+
+## Custom task (one minute)
+
 ```python
 from vistexaud.tasks.base import BaseTask, TaskResult
 from vistexaud.core.packet import Packet
+
 class MyFilter(BaseTask):
     task_name = "my_filter"
+
     def process(self, packet: Packet):
         return Packet(TaskResult("my_filter", packet.payload[::-1]), stream="out")
 ```
 
-MIT License.
+## Benchmarks (reference machine)
+
+- Text branch (3 tasks): ~9,000–12,000 docs/s, ~0.1 ms/doc.
+- Vision (VGA frame): face check <1 ms, motion ~6 ms, hand ~2 ms.
+- Run your own: `python -m vistexaud.cli bench`, then `graph.report()`.
+
+## Brand
+
+Identity, palette, and logo usage live in [`docs/BRANDING.md`](docs/BRANDING.md). Mark: `docs/assets/logo.svg`.
+
+---
+
+Copyright (c) 2026 salim-slimani. MIT License — see [LICENSE](LICENSE).

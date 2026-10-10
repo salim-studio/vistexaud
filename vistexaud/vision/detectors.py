@@ -1,9 +1,10 @@
-"""Vision tasks: fast OpenCV-first, optional MediaPipe/ONNX acceleration.
+"""Vision tasks: fast OpenCV-native detectors, zero model downloads.
 
-- FaceDetector: OpenCV Haar (bundled with opencv) -> 0 download, ~5ms. Optional YuNet ONNX if provided.
-- HandTracker / PoseEstimator: tries `mediapipe` package if installed, else lightweight fallback (skin-color/contour or body HOG).
-- ObjectDetector: HOG-person + motion fallback; accepts ONNX path for YOLO if user provides.
-All return TaskResult with boxes/landmarks so API mirrors MediaPipe Tasks.
+- FaceDetector: Haar cascade on OpenCV 4, YuNet (FaceDetectorYN) on OpenCV 5 with a user-provided ONNX model.
+- HandTracker: skin-color mask + contour analysis (fast, no model).
+- PoseEstimator: HOG person detector where available, contour fallback otherwise.
+- MotionDetector: background-subtraction detector for streaming.
+All return TaskResult with boxes/landmarks through a unified API.
 """
 from __future__ import annotations
 import time
@@ -74,26 +75,18 @@ class FaceDetector(BaseTask):
                         dets.append(Detection("face", float(f[-1]), tuple(map(int, f[:4]))))
             except Exception:
                 pass
-        # else: graceful empty (no crash on OpenCV5 without model) — MotionDetector still works
+        # else: graceful empty (no crash on OpenCV 5 without model) — MotionDetector still works
         return Packet(TaskResult("face_detector", dets, (time.perf_counter()-t0)*1000),
                       timestamp_us=packet.timestamp_us, stream="faces")
 
 class HandTracker(BaseTask):
-    """Uses mediapipe if available (best quality), else contour fallback (fast, no model)."""
+    """Skin-color mask + contour analysis (fast, no model download)."""
     task_name = "hand_tracker"
     def open(self, options=None):
         super().open(options)
         _need_cv2()
-        self.mp_hands = None
-        try:
-            import mediapipe as mp
-            self.mp_hands = mp.solutions.hands.Hands(
-                static_image_mode=False, max_num_hands=2,
-                min_detection_confidence=0.5, min_tracking_confidence=0.5)
-        except Exception:
-            self.mp_hands = None
 
-    def _fallback(self, img):
+    def _detect(self, img):
         # skin-color mask + contours -> palm boxes (very fast, ~2ms)
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv, np.array([0, 30, 60]), np.array([20, 150, 255]))
@@ -113,24 +106,12 @@ class HandTracker(BaseTask):
         if payload is None:
             return packet
         img = payload.data if isinstance(payload, ImageFrame) else payload
-        dets = []
-        if self.mp_hands is not None:
-            rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            r = self.mp_hands.process(rgb)
-            h, w = img.shape[:2]
-            if r.multi_hand_landmarks:
-                for lm in r.multi_hand_landmarks:
-                    xs = [p.x * w for p in lm.landmark]; ys = [p.y * h for p in lm.landmark]
-                    x, y = int(min(xs)), int(min(ys)); ww, hh = int(max(xs)-x), int(max(ys)-y)
-                    pts = [(p.x, p.y, p.z) for p in lm.landmark]
-                    dets.append(Detection("hand", 0.95, (x, y, ww, hh), landmarks=pts))
-        else:
-            dets = self._fallback(img)
+        dets = self._detect(img)
         return Packet(TaskResult("hand_tracker", dets, (time.perf_counter()-t0)*1000),
                       timestamp_us=packet.timestamp_us, stream="hands")
 
 class PoseEstimator(BaseTask):
-    """HOG person box + 5-point pseudo-skeleton (fast). Upgrades to mediapipe if installed."""
+    """HOG person detector where available, contour fallback otherwise, with 5-point pseudo-skeleton."""
     task_name = "pose_estimator"
     def open(self, options=None):
         super().open(options)
@@ -142,12 +123,6 @@ class PoseEstimator(BaseTask):
                 self.hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
         except Exception:
             self.hog = None
-        self.mp_pose = None
-        try:
-            import mediapipe as mp
-            self.mp_pose = mp.solutions.pose.Pose(static_image_mode=False, min_detection_confidence=0.5)
-        except Exception:
-            pass
 
     def process(self, packet: Packet):
         from vistexaud.core.types import ImageFrame
@@ -157,20 +132,11 @@ class PoseEstimator(BaseTask):
             return packet
         img = payload.data if isinstance(payload, ImageFrame) else payload
         out = []
-        if self.mp_pose is not None:
-            rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            r = self.mp_pose.process(rgb)
-            if r.pose_landmarks:
-                h, w = img.shape[:2]
-                pts = [(p.x*w, p.y*h) for p in r.pose_landmarks.landmark]
-                xs = [p[0] for p in pts]; ys = [p[1] for p in pts]
-                out.append(Detection("person", 0.95, (int(min(xs)), int(min(ys)), int(max(xs)-min(xs)), int(max(ys)-min(ys))), landmarks=pts))
-        else:
-            if self.hog is not None:
-                rects, _ = self.hog.detectMultiScale(img, winStride=(8, 8))
-                for (x, y, w, h) in rects:
-                    skel = [(x+w//2, y+h//5), (x+w//3, y+h//2), (x+2*w//3, y+h//2), (x+w//3, y+h-5), (x+2*w//3, y+h-5)]
-                    out.append(Detection("person", 0.7, (int(x), int(y), int(w), int(h)), landmarks=skel))
+        if self.hog is not None:
+            rects, _ = self.hog.detectMultiScale(img, winStride=(8, 8))
+            for (x, y, w, h) in rects:
+                skel = [(x+w//2, y+h//5), (x+w//3, y+h//2), (x+2*w//3, y+h//2), (x+w//3, y+h-5), (x+2*w//3, y+h-5)]
+                out.append(Detection("person", 0.7, (int(x), int(y), int(w), int(h)), landmarks=skel))
         return Packet(TaskResult("pose_estimator", out, (time.perf_counter()-t0)*1000),
                       timestamp_us=packet.timestamp_us, stream="pose")
 

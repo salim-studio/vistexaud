@@ -1,4 +1,4 @@
-"""Audio tasks: numpy-only spectral features, no heavy deps. Mirrors MediaPipe Audio Tasks."""
+"""Audio tasks: numpy-only spectral features, no heavy dependencies."""
 from __future__ import annotations
 import time
 import numpy as np

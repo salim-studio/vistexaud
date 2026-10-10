@@ -1,4 +1,4 @@
-"""BaseTask: MediaPipe-Tasks-like unified API (process(image|text|audio))."""
+"""BaseTask: unified task API (process(image|text|audio))."""
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any

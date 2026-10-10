@@ -1,4 +1,4 @@
-"""vistexaud: fast, practical, unified Vision/Text/Audio pipeline framework (like MediaPipe, lighter)."""
+"""vistexaud: fast, practical, unified Vision/Text/Audio pipeline framework."""
 from vistexaud.core.types import ImageFrame, AudioChunk, TextDoc
 from vistexaud.core.packet import Packet
 from vistexaud.core.calculator import Calculator

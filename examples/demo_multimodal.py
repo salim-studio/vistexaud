@@ -7,7 +7,7 @@ import numpy as np
 
 # text branch
 tg = Graph([LanguageDetector(), TextClassifier(), Summarizer()])
-print(tg.run_parallel(TextDoc("مباراة كرة القدم اليوم. الذكاء الاصطناعي يحلل الأداء. الاقتصاد والسوق بخير.")))
+print(tg.run_parallel(TextDoc("Today's football match. AI software analyzes the performance. Markets rally on tech earnings.")))
 
 # audio branch (synthetic 440Hz tone)
 sr = 16000

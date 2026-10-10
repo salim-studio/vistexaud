@@ -5,8 +5,13 @@ def test_text_pipeline():
     from vistexaud.core.types import TextDoc
     from vistexaud.text.text_tasks import LanguageDetector, TextClassifier, TextEmbedder, Summarizer
     g = Graph([LanguageDetector(), TextClassifier(), TextEmbedder(), Summarizer()])
-    out = g.run_parallel(TextDoc("مباراة كرة القدم football match"))
+    out = g.run_parallel(TextDoc("A football match analyzed by AI software"))
     assert out is not None
+    assert out["language_detector"].output["lang"] == "en"
+    assert out["text_classifier"].output["label"] == "sport"
+    # multilingual check: Arabic script is detected as Arabic
+    ar = g.run_parallel(TextDoc("مباراة كرة القدم"))
+    assert ar["language_detector"].output["lang"] == "ar"
     print("text OK:", out)
 
 def test_audio_pipeline():
@@ -29,11 +34,8 @@ def test_vision_pipeline():
     from vistexaud.vision.detectors import FaceDetector, MotionDetector
     img = np.zeros((240, 320, 3), dtype=np.uint8)
     g = Graph([FaceDetector(), MotionDetector()])
-    # each node returns TaskResult; chain passes TaskResult -> detectors accept ndarray only,
-    # so test nodes individually (practical: one vision task per graph in live mode)
-    g1 = Graph([FaceDetector()])
-    print("vision OK:", g1.process_one(img))
-    print(g1.report())
+    print("vision OK:", g.run_parallel(img))
+    print(g.report())
 
 def test_pipeline_streaming():
     from vistexaud.core.graph import Pipeline
@@ -42,7 +44,7 @@ def test_pipeline_streaming():
     got = []
     p = Pipeline([TextClassifier()], on_result=lambda r: got.append(r)).start()
     for _ in range(5):
-        p.submit(TextDoc("AI software مباراة"))
+        p.submit(TextDoc("AI software analyzes football"))
     import time; time.sleep(0.5); p.stop()
     assert len(got) > 0, "streaming produced nothing"
     print("streaming OK:", len(got))

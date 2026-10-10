@@ -1,4 +1,4 @@
-"""Text tasks: zero-dependency, fast (regex/statistics). Mirrors MediaPipe Text Tasks."""
+"""Text tasks: zero-dependency, fast (regex/statistics)."""
 from __future__ import annotations
 import re, math, time
 from collections import Counter

@@ -1,4 +1,4 @@
-"""Packet: timestamped envelope like MediaPipe Packet, but zero-overhead."""
+"""Packet: lightweight timestamped envelope for streaming data."""
 from __future__ import annotations
 import time
 from dataclasses import dataclass

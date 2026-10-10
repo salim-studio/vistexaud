@@ -1,7 +1,7 @@
 """Graph + Pipeline: fast sequential/threaded DAG execution.
 
-Design goals vs MediaPipe:
-- pure Python, no Bazel/C++, pip install in seconds
+Design goals:
+- pure Python, pip install in seconds
 - threaded streaming with bounded queues (backpressure) for speed
 - per-node timing stats for efficiency analysis
 """
@@ -66,7 +66,7 @@ class Graph:
         return [p.payload for p in packets]
 
     def run_parallel(self, payload: Any, stream: str = "input") -> dict:
-        """Run every node independently on the SAME input (MediaPipe branches). Fast + practical."""
+        """Run every node independently on the SAME input (parallel branches). Fast + practical."""
         import time as _t
         out = {}
         for node in self.nodes:

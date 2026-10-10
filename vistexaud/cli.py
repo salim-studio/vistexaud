@@ -56,7 +56,7 @@ def cmd_bench(_):
     g = Graph([LanguageDetector(), TextClassifier(), TextEmbedder()])
     t0 = time.perf_counter(); N = 500
     for _ in range(N):
-        g.run_parallel(TextDoc("الذكاء الاصطناعي والرياضة مباراة كرة AI software"))
+        g.run_parallel(TextDoc("AI software analyzes the football match. Markets rally on tech earnings."))
     dt = time.perf_counter() - t0
     print(f"text pipeline: {N/dt:.0f} docs/sec, {dt/N*1000:.3f} ms/doc")
     print(g.report())
@@ -65,7 +65,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog="vistexaud", description="vistexaud — fast unified Vision/Text/Audio")
     sub = ap.add_subparsers(dest="cmd", required=True)
     v = sub.add_parser("vision", help="live camera face/motion demo"); v.add_argument("--source", default="0"); v.add_argument("--all", action="store_true"); v.set_defaults(fn=cmd_vision)
-    t = sub.add_parser("text", help="text pipeline demo"); t.add_argument("--text", default="مباراة كرة القدم والذكاء الاصطناعي AI"); t.set_defaults(fn=cmd_text)
+    t = sub.add_parser("text", help="text pipeline demo"); t.add_argument("--text", default="A football match analyzed by AI software"); t.set_defaults(fn=cmd_text)
     a = sub.add_parser("audio", help="audio pipeline demo (synthetic)"); a.set_defaults(fn=cmd_audio)
     b = sub.add_parser("bench", help="speed benchmark"); b.set_defaults(fn=cmd_bench)
     args = ap.parse_args(argv); args.fn(args)
