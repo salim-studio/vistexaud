@@ -265,21 +265,27 @@
     for (var i = 0; i < n; i++) energy += samples[i] * samples[i];
     energy = n ? energy / n : 0;
     var speech = energy > 0.01;
-    // spectral centroid + zero-crossing rate on a window (mirrors AudioClassifier)
-    var N = Math.min(n, 4096), re = 0, im = 0, mag = 0, centroidNum = 0, centroidDen = 0, zc = 0;
-    var prev = 0;
-    for (var k = 0; k < N; k += 4) {
-      var s = samples[k];
-      if ((prev > 0) !== (s > 0)) zc++;
-      prev = s;
-      // Goertzel-lite: magnitude at a few probe bins for centroid estimate
-      var m = Math.abs(s);
-      mag += m;
-      centroidNum += m * (k / N);
-      centroidDen += m;
+    // spectral centroid via a compact real DFT (mirrors AudioClassifier)
+    var N = Math.min(n, 512), num = 0, den = 0, zc = 0;
+    var prevS = samples[0] > 0;
+    for (var i = 1; i < n; i += 2) {
+      var cur = samples[i] > 0;
+      if (cur !== prevS) zc++;
+      prevS = cur;
     }
-    var centroid = centroidDen ? (centroidNum / centroidDen) * (sr / 2) : 0;
-    var zcr = N ? zc / (N / 4) : 0;
+    for (var k = 1; k <= N / 2; k++) {
+      var re = 0, im = 0;
+      for (var m = 0; m < N; m++) {
+        var a = 2 * Math.PI * k * m / N;
+        re += samples[m] * Math.cos(a);
+        im -= samples[m] * Math.sin(a);
+      }
+      var mag = Math.sqrt(re * re + im * im);
+      num += (k * sr / N) * mag;
+      den += mag;
+    }
+    var centroid = den ? num / den : 0;
+    var zcr = n ? zc / (n / 2) : 0;
     var label = "silence", score = 0.99;
     if (energy >= 1e-4) {
       if (centroid < 1200 && zcr < 0.15) { label = "speech"; score = 0.8; }
