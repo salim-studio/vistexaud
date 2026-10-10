@@ -41,6 +41,8 @@
   }
 
   var input = document.getElementById("pg-input");
+  // Shared results store for the JSON report (must exist before run() below)
+  window.VXA_RESULTS = { text: null, image: null, video: null, audio: null };
   function run() {
     var t0 = performance.now();
     var text = input.value;
@@ -74,9 +76,6 @@
       document.getElementById(btn.getAttribute("data-ptab")).classList.add("active");
     });
   });
-
-  // Shared results store for the JSON report
-  window.VXA_RESULTS = { text: null, image: null, video: null, audio: null };
 
   // ---- Image bench: brightness / contrast / edge density / dominant channel ----
   var imgCanvas = document.getElementById("img-canvas");
