@@ -16,6 +16,8 @@
 
 Pure-Python streaming framework for **images, text, and sound**. Install in seconds, run offline, and chain tasks into live pipelines with per-node timing built in.
 
+**Live demo:** try the multimodal test bench at <https://salim-studio.github.io/vistexaud/> — upload images, video, audio, and text, run the analyses in your browser, and download a JSON report.
+
 ## Why vistexaud
 
 - **Zero model downloads required** — OpenCV + NumPy heuristics run on first launch (~0.08 ms/doc for text, single-digit ms for vision).

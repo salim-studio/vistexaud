@@ -69,14 +69,102 @@
 
   <section id="playground" class="section">
     <h2>Playground <span class="tag">runs 100% in your browser</span></h2>
-    <p class="muted">A tiny client-side mirror of the vistexaud text branch — language detection, classification, extractive summary.</p>
-    <textarea id="pg-input" rows="4">A football match analyzed by AI software. Markets rally as tech earnings beat expectations.</textarea>
-    <div class="pg-grid">
-      <div class="pg-card"><h4>Language</h4><p id="pg-lang">—</p></div>
-      <div class="pg-card"><h4>Category</h4><p id="pg-cat">—</p></div>
-      <div class="pg-card"><h4>Latency</h4><p id="pg-ms">—</p></div>
-      <div class="pg-card wide"><h4>Summary</h4><p id="pg-sum">—</p></div>
+    <p class="muted">Upload your own files and run the same analyses the vistexaud Python tasks perform — live, with measured latency. Nothing leaves your device.</p>
+    <div class="tabs" id="pg-tabs">
+      <button class="tab active" data-ptab="p-text" type="button">Text</button>
+      <button class="tab" data-ptab="p-image" type="button">Image</button>
+      <button class="tab" data-ptab="p-video" type="button">Video</button>
+      <button class="tab" data-ptab="p-audio" type="button">Audio</button>
     </div>
+
+    <div class="ppane active" id="p-text">
+      <textarea id="pg-input" rows="4">A football match analyzed by AI software. Markets rally as tech earnings beat expectations.</textarea>
+      <div class="pg-grid">
+        <div class="pg-card"><h4>Language</h4><p id="pg-lang">—</p></div>
+        <div class="pg-card"><h4>Category</h4><p id="pg-cat">—</p></div>
+        <div class="pg-card"><h4>Latency</h4><p id="pg-ms">—</p></div>
+        <div class="pg-card wide"><h4>Summary</h4><p id="pg-sum">—</p></div>
+      </div>
+    </div>
+
+    <div class="ppane" id="p-image">
+      <div class="upload-row">
+        <label class="file-btn">Choose image<input type="file" id="img-file" accept="image/*" hidden/></label>
+        <button id="img-sample" type="button">Use sample</button>
+        <span id="img-name" class="muted"></span>
+      </div>
+      <div class="media-grid">
+        <canvas id="img-canvas" width="640" height="360"></canvas>
+        <div class="pg-grid">
+          <div class="pg-card"><h4>Dimensions</h4><p id="img-dims">—</p></div>
+          <div class="pg-card"><h4>Brightness</h4><p id="img-bright">—</p></div>
+          <div class="pg-card"><h4>Contrast</h4><p id="img-contrast">—</p></div>
+          <div class="pg-card"><h4>Edge density</h4><p id="img-edge">—</p></div>
+          <div class="pg-card"><h4>Dominant channel</h4><p id="img-dom">—</p></div>
+          <div class="pg-card"><h4>Latency</h4><p id="img-ms">—</p></div>
+        </div>
+      </div>
+<pre class="code active snip"><code>from vistexaud.core.graph import Graph
+from vistexaud.vision.detectors import FaceDetector, MotionDetector
+g = Graph([FaceDetector(), MotionDetector()])
+print(g.run_parallel(cv2.imread("photo.jpg")))
+print(g.report())  # per-node ms</code></pre>
+    </div>
+
+    <div class="ppane" id="p-video">
+      <div class="upload-row">
+        <label class="file-btn">Choose video<input type="file" id="vid-file" accept="video/*" hidden/></label>
+        <button id="vid-cam" type="button">Use webcam</button>
+        <button id="vid-stop" type="button">Stop</button>
+        <span id="vid-name" class="muted"></span>
+      </div>
+      <div class="media-grid">
+        <div>
+          <video id="vid-el" muted loop playsinline controls></video>
+          <canvas id="motion-canvas" width="640" height="90"></canvas>
+        </div>
+        <div class="pg-grid">
+          <div class="pg-card"><h4>Status / FPS</h4><p id="vid-fps">idle</p></div>
+          <div class="pg-card"><h4>Frames analyzed</h4><p id="vid-frames">0</p></div>
+          <div class="pg-card"><h4>Avg motion</h4><p id="vid-motion">—</p></div>
+          <div class="pg-card"><h4>Avg brightness</h4><p id="vid-bright">—</p></div>
+          <div class="pg-card"><h4>Last sample</h4><p id="vid-ms">—</p></div>
+          <div class="pg-card"><h4>Verdict</h4><p id="vid-verdict">—</p></div>
+        </div>
+      </div>
+<pre class="code active snip"><code>from vistexaud.core.graph import Pipeline
+from vistexaud.vision.detectors import MotionDetector
+p = Pipeline([MotionDetector()], on_result=print).start()
+# submit each camera frame, then p.stop(); live FPS in p.fps</code></pre>
+    </div>
+
+    <div class="ppane" id="p-audio">
+      <div class="upload-row">
+        <label class="file-btn">Choose audio<input type="file" id="aud-file" accept="audio/*" hidden/></label>
+        <button id="aud-sample" type="button">220 Hz sample</button>
+        <button id="aud-rec" type="button">Record mic</button>
+        <button id="aud-stop" type="button" disabled>Stop</button>
+        <span id="aud-name" class="muted"></span>
+      </div>
+      <audio id="aud-el" controls></audio>
+      <div class="media-grid">
+        <canvas id="wave-canvas" width="640" height="160"></canvas>
+        <div class="pg-grid">
+          <div class="pg-card"><h4>Duration</h4><p id="aud-dur">—</p></div>
+          <div class="pg-card"><h4>Voice activity</h4><p id="aud-vad">—</p></div>
+          <div class="pg-card"><h4>Label</h4><p id="aud-label">—</p></div>
+          <div class="pg-card"><h4>Pitch</h4><p id="aud-pitch">—</p></div>
+          <div class="pg-card"><h4>Energy</h4><p id="aud-energy">—</p></div>
+          <div class="pg-card"><h4>Latency</h4><p id="aud-ms">—</p></div>
+        </div>
+      </div>
+<pre class="code active snip"><code>from vistexaud.core.graph import Graph
+from vistexaud.audio.audio_tasks import VoiceActivityDetector, AudioClassifier, PitchEstimator
+g = Graph([VoiceActivityDetector(), AudioClassifier(), PitchEstimator()])
+print(g.run_parallel(AudioChunk(samples, 16000)))</code></pre>
+    </div>
+
+    <button id="report-btn" type="button">Download JSON report</button>
   </section>
 
   <section id="tasks" class="section">
